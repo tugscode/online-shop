@@ -3,36 +3,151 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X, Plus, Minus, Trash2, CheckCircle } from 'lucide-react'
 import { useCart } from '@/context/CartContext'
 import { useState } from 'react'
-import Image from 'next/image'
 
 interface Props {
   open: boolean
   onClose: () => void
 }
 
-type Step = 'cart' | 'qr' | 'success'
+type Step = 'cart' | 'contact' | 'success'
+
+interface ContactForm {
+  name: string
+  phone: string
+  locationType: 'ub' | 'regional' | ''
+  // Улаанбаатар
+  district: string
+  khoroo: string
+  building: string
+  street: string
+  door: string
+  detail: string
+  // Орон нутаг
+  aimag: string
+  sum: string
+  regionalDetail: string
+}
+
+const emptyContact: ContactForm = {
+  name: '',
+  phone: '',
+  locationType: '',
+  district: '',
+  khoroo: '',
+  building: '',
+  street: '',
+  door: '',
+  detail: '',
+  aimag: '',
+  sum: '',
+  regionalDetail: '',
+}
+
+const UB_DISTRICTS = [
+  'Баянзүрх',
+  'Сүхбаатар',
+  'Хан-Уул',
+  'Баянгол',
+  'Чингэлтэй',
+  'Сонгинохайрхан',
+  'Налайх',
+  'Багануур',
+  'Багахангай',
+]
+
+const AIMAGS = [
+  'Архангай',
+  'Баян-Өлгий',
+  'Баянхонгор',
+  'Булган',
+  'Говь-Алтай',
+  'Говьсүмбэр',
+  'Дархан-Уул',
+  'Дорноговь',
+  'Дорнод',
+  'Дундговь',
+  'Завхан',
+  'Орхон',
+  'Өвөрхангай',
+  'Өмнөговь',
+  'Сүхбаатар',
+  'Сэлэнгэ',
+  'Төв',
+  'Увс',
+  'Ховд',
+  'Хөвсгөл',
+  'Хэнтий',
+]
 
 export default function CartSidebar({ open, onClose }: Props) {
   const { items, updateQuantity, removeItem, totalPrice, clearCart } = useCart()
   const [step, setStep] = useState<Step>('cart')
-  const [checking, setChecking] = useState(false)
+  const [contact, setContact] = useState<ContactForm>(emptyContact)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
-  const handleCheckPayment = () => {
-    setChecking(true)
-    // Энд бодит төлбөр шалгах API дуудаж болно
-    // Одоохондоо 2 секундын дараа амжилттай гэж үзье
-    setTimeout(() => {
-      setChecking(false)
-      setStep('success')
+  const update = (field: Partial<ContactForm>) => setContact((prev) => ({ ...prev, ...field }))
+
+  const handleOrder = async () => {
+    if (!contact.name.trim() || !contact.phone.trim()) {
+      setError('Нэр болон утасны дугаараа оруулна уу')
+      return
+    }
+    if (!contact.locationType) {
+      setError('Хүргэлтийн байршил сонгоно уу')
+      return
+    }
+    if (contact.locationType === 'ub' && (!contact.district || !contact.khoroo)) {
+      setError('Дүүрэг болон хорооны мэдээллийг оруулна уу')
+      return
+    }
+    if (contact.locationType === 'regional' && (!contact.aimag || !contact.sum)) {
+      setError('Аймаг болон сумын мэдээллийг оруулна уу')
+      return
+    }
+
+    setError('')
+    setLoading(true)
+
+    try {
+      const res = await fetch('/api/order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: items.map((i) => ({
+            name: i.product.name,
+            quantity: i.quantity,
+            price: i.product.price,
+          })),
+          totalPrice,
+          contact,
+        }),
+      })
+
+      if (!res.ok) throw new Error('Алдаа гарлаа')
+
       clearCart()
-    }, 2000)
+      setStep('success')
+    } catch {
+      setError('Захиалга илгээхэд алдаа гарлаа. Дахин оролдоно уу.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleClose = () => {
     onClose()
-    // Sidebar хаагдсаны дараа step reset хийх
-    setTimeout(() => setStep('cart'), 300)
+    setTimeout(() => {
+      setStep('cart')
+      setContact(emptyContact)
+      setError('')
+    }, 300)
   }
+
+  const inputClass =
+    'w-full border-2 border-gray-100 hover:border-blue-300 focus:border-blue-500 focus:outline-none rounded-xl px-4 py-2.5 transition-colors'
+  const selectClass =
+    'w-full appearance-none border-2 border-gray-100 hover:border-blue-300 focus:border-blue-500 focus:outline-none rounded-xl px-3 py-2.5 text-gray-700 transition-colors bg-white cursor-pointer'
 
   return (
     <AnimatePresence>
@@ -59,7 +174,7 @@ export default function CartSidebar({ open, onClose }: Props) {
             <div className="flex items-center justify-between p-4 border-b">
               <h2 className="text-xl font-bold">
                 {step === 'cart' && 'Сагс'}
-                {step === 'qr' && 'Төлбөр төлөх'}
+                {step === 'contact' && 'Захиалгын мэдээлэл'}
                 {step === 'success' && 'Захиалга амжилттай'}
               </h2>
               <button onClick={handleClose} className="p-1 hover:bg-gray-100 rounded">
@@ -77,10 +192,15 @@ export default function CartSidebar({ open, onClose }: Props) {
                     items.map(({ product, quantity }) => (
                       <div key={product.id} className="flex gap-3 items-start">
                         {product.image_url ? (
-                          <img src={product.image_url} alt={product.name}
-                            className="w-16 h-16 object-cover rounded-lg" />
+                          <img
+                            src={product.image_url}
+                            alt={product.name}
+                            className="w-16 h-16 object-cover rounded-lg"
+                          />
                         ) : (
-                          <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center text-2xl">📦</div>
+                          <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center text-2xl">
+                            📦
+                          </div>
                         )}
                         <div className="flex-1">
                           <p className="font-medium text-sm">{product.name}</p>
@@ -88,19 +208,25 @@ export default function CartSidebar({ open, onClose }: Props) {
                             {product.price.toLocaleString()}₮
                           </p>
                           <div className="flex items-center gap-2 mt-1">
-                            <button onClick={() => updateQuantity(product.id, quantity - 1)}
-                              className="p-1 bg-gray-100 rounded hover:bg-gray-200">
+                            <button
+                              onClick={() => updateQuantity(product.id, quantity - 1)}
+                              className="p-1 bg-gray-100 rounded hover:bg-gray-200"
+                            >
                               <Minus size={12} />
                             </button>
                             <span className="w-6 text-center text-sm">{quantity}</span>
-                            <button onClick={() => updateQuantity(product.id, quantity + 1)}
-                              className="p-1 bg-gray-100 rounded hover:bg-gray-200">
+                            <button
+                              onClick={() => updateQuantity(product.id, quantity + 1)}
+                              className="p-1 bg-gray-100 rounded hover:bg-gray-200"
+                            >
                               <Plus size={12} />
                             </button>
                           </div>
                         </div>
-                        <button onClick={() => removeItem(product.id)}
-                          className="text-red-400 hover:text-red-600 p-1">
+                        <button
+                          onClick={() => removeItem(product.id)}
+                          className="text-red-400 hover:text-red-600 p-1"
+                        >
                           <Trash2 size={16} />
                         </button>
                       </div>
@@ -115,69 +241,296 @@ export default function CartSidebar({ open, onClose }: Props) {
                       <span className="text-blue-600">{totalPrice.toLocaleString()}₮</span>
                     </div>
                     <button
-                      onClick={() => setStep('qr')}
+                      onClick={() => setStep('contact')}
                       className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition"
                     >
-                      Захиалах
+                      Захиалах →
                     </button>
                   </div>
                 )}
               </>
             )}
 
-            {/* ─── QR STEP ─── */}
-            {step === 'qr' && (
-              <div className="flex-1 flex flex-col items-center justify-center p-6 gap-6">
-                <p className="text-gray-500 text-sm text-center">
-                  Дараах QR кодыг уншуулж төлбөрөө төлнө үү
-                </p>
+            {/* ─── CONTACT STEP ─── */}
+            {step === 'contact' && (
+              <div className="flex-1 overflow-y-auto p-5 space-y-4">
+                {/* Захиалгын товч хураангуй */}
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <p className="text-xs text-gray-500 mb-2 font-medium uppercase tracking-wide">
+                    Захиалга
+                  </p>
+                  {items.map(({ product, quantity }) => (
+                    <div key={product.id} className="flex justify-between text-sm py-1">
+                      <span className="text-gray-700">
+                        {product.name} x{quantity}
+                      </span>
+                      <span className="font-medium">
+                        {(product.price * quantity).toLocaleString()}₮
+                      </span>
+                    </div>
+                  ))}
+                  <div className="border-t mt-2 pt-2 flex justify-between font-bold">
+                    <span>Нийт</span>
+                    <span className="text-blue-600">{totalPrice.toLocaleString()}₮</span>
+                  </div>
+                </div>
 
-                {/* QR зураг */}
-                <div className="border-4 border-blue-600 rounded-2xl p-2 shadow-lg">
-                  <img
-                    src="/payment-qr.png"
-                    alt="Payment QR"
-                    className="w-56 h-56 object-contain"
+                {/* Нэр */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Нэр</label>
+                  <input
+                    type="text"
+                    placeholder="Таны нэр"
+                    value={contact.name}
+                    onChange={(e) => update({ name: e.target.value })}
+                    className={inputClass}
                   />
                 </div>
 
-                {/* Дүн */}
-                <div className="bg-blue-50 rounded-xl px-6 py-3 text-center">
-                  <p className="text-sm text-gray-500">Төлөх дүн</p>
-                  <p className="text-2xl font-bold text-blue-600">
-                    {totalPrice.toLocaleString()}₮
-                  </p>
+                {/* Утас */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">
+                    Утасны дугаар
+                  </label>
+                  <input
+                    type="tel"
+                    placeholder="99xxxxxx"
+                    value={contact.phone}
+                    onChange={(e) => update({ phone: e.target.value })}
+                    className={inputClass}
+                  />
                 </div>
 
-                <p className="text-xs text-gray-400 text-center">
-                  Гүйлгээ хийсний дараа доорх товчийг дарна уу
-                </p>
+                {/* Хүргэлтийн байршил */}
+                <div>
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
+                    Хүргэлтийн байршил
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { value: 'ub', label: '🏙️ Улаанбаатар' },
+                      { value: 'regional', label: '🌄 Орон нутаг' },
+                    ].map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() =>
+                          update({
+                            locationType: opt.value as 'ub' | 'regional',
+                            district: '',
+                            khoroo: '',
+                            building: '',
+                            street: '',
+                            door: '',
+                            detail: '',
+                            aimag: '',
+                            sum: '',
+                            regionalDetail: '',
+                          })
+                        }
+                        className={`py-2.5 rounded-xl text-sm font-semibold border-2 transition-all ${
+                          contact.locationType === opt.value
+                            ? 'bg-blue-600 border-blue-600 text-white'
+                            : 'bg-white border-gray-100 text-gray-600 hover:border-blue-300'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-                {/* Гүйлгээ шалгах товч */}
-                <button
-                  onClick={handleCheckPayment}
-                  disabled={checking}
-                  className="w-full bg-green-500 text-white py-3 rounded-xl font-bold hover:bg-green-600 transition disabled:opacity-70 flex items-center justify-center gap-2"
-                >
-                  {checking ? (
-                    <>
-                      <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24" fill="none">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-                      </svg>
-                      Шалгаж байна...
-                    </>
-                  ) : (
-                    'Гүйлгээ шалгах ✓'
-                  )}
-                </button>
+                {/* ── УЛААНБААТАР ── */}
+                {contact.locationType === 'ub' && (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1">
+                          Дүүрэг
+                        </label>
+                        <select
+                          value={contact.district}
+                          onChange={(e) => update({ district: e.target.value })}
+                          className={selectClass}
+                        >
+                          <option value="" disabled>
+                            Сонгох
+                          </option>
+                          {UB_DISTRICTS.map((d) => (
+                            <option key={d} value={d}>
+                              {d}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1">
+                          Хороо
+                        </label>
+                        <select
+                          value={contact.khoroo}
+                          onChange={(e) => update({ khoroo: e.target.value })}
+                          className={selectClass}
+                        >
+                          <option value="" disabled>
+                            Сонгох
+                          </option>
+                          {Array.from({ length: 30 }, (_, i) => i + 1).map((n) => (
+                            <option key={n} value={`${n}-р хороо`}>
+                              {n}-р хороо
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
 
-                <button
-                  onClick={() => setStep('cart')}
-                  className="text-sm text-gray-400 hover:text-gray-600 underline"
-                >
-                  ← Буцах
-                </button>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1">
+                          Байр
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Байрны нэр/дугаар"
+                          value={contact.building}
+                          onChange={(e) => update({ building: e.target.value })}
+                          className={inputClass}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1">
+                          Гудамж
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Гудамжны нэр"
+                          value={contact.street}
+                          onChange={(e) => update({ street: e.target.value })}
+                          className={inputClass}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">Тоот</label>
+                      <input
+                        type="text"
+                        placeholder="Өрөөний дугаар"
+                        value={contact.door}
+                        onChange={(e) => update({ door: e.target.value })}
+                        className={inputClass}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">
+                        Дэлгэрэнгүй хаяг
+                      </label>
+                      <textarea
+                        placeholder="Жишээ: 3-р давхар, баруун гар тал..."
+                        value={contact.detail}
+                        onChange={(e) => update({ detail: e.target.value })}
+                        rows={2}
+                        className="w-full border-2 border-gray-100 hover:border-blue-300 focus:border-blue-500 focus:outline-none rounded-xl px-4 py-2.5 transition-colors resize-none"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* ── ОРОН НУТАГ ── */}
+                {contact.locationType === 'regional' && (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1">
+                          Аймаг
+                        </label>
+                        <select
+                          value={contact.aimag}
+                          onChange={(e) => update({ aimag: e.target.value })}
+                          className={selectClass}
+                        >
+                          <option value="" disabled>
+                            Сонгох
+                          </option>
+                          {AIMAGS.map((a) => (
+                            <option key={a} value={a}>
+                              {a}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1">
+                          Сум
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Сумын нэр"
+                          value={contact.sum}
+                          onChange={(e) => update({ sum: e.target.value })}
+                          className={inputClass}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">
+                        Дэлгэрэнгүй хаяг
+                      </label>
+                      <textarea
+                        placeholder="Гудамж, байр, тоот эсвэл бусад мэдээлэл..."
+                        value={contact.regionalDetail}
+                        onChange={(e) => update({ regionalDetail: e.target.value })}
+                        rows={2}
+                        className="w-full border-2 border-gray-100 hover:border-blue-300 focus:border-blue-500 focus:outline-none rounded-xl px-4 py-2.5 transition-colors resize-none"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Алдаа */}
+                {error && (
+                  <p className="text-red-500 text-sm bg-red-50 rounded-xl px-4 py-2">{error}</p>
+                )}
+
+                {/* Товчнууд */}
+                <div className="space-y-2 pb-4">
+                  <button
+                    onClick={handleOrder}
+                    disabled={loading}
+                    className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition disabled:opacity-60 flex items-center justify-center gap-2"
+                  >
+                    {loading ? (
+                      <>
+                        <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none">
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8v8z"
+                          />
+                        </svg>
+                        Илгээж байна...
+                      </>
+                    ) : (
+                      'Захиалга баталгаажуулах ✓'
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setStep('cart')}
+                    className="w-full text-sm text-gray-400 hover:text-gray-600 py-2 underline"
+                  >
+                    ← Буцах
+                  </button>
+                </div>
               </div>
             )}
 
@@ -197,8 +550,9 @@ export default function CartSidebar({ open, onClose }: Props) {
                 </motion.div>
 
                 <h3 className="text-2xl font-bold text-gray-800">Баярлалаа!</h3>
-                <p className="text-gray-500">
-                  Таны захиалга амжилттай бүртгэгдлээ.<br />
+                <p className="text-gray-500 leading-relaxed">
+                  Таны захиалга амжилттай бүртгэгдлээ.
+                  <br />
                   Бид тантай удахгүй холбоо барих болно.
                 </p>
 
