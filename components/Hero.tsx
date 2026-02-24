@@ -12,7 +12,11 @@ export default function Hero() {
           transition={{ duration: 0.6 }}
           className="text-4xl md:text-6xl font-bold mb-6"
         >
-          Монголын шилдэг<br />онлайн дэлгүүр
+          simple
+          <br />
+          warm
+          <br />
+          meaningful
         </motion.h1>
 
         <motion.p
@@ -21,7 +25,7 @@ export default function Hero() {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="text-blue-100 text-lg md:text-xl mb-8"
         >
-          Техник, электроник бүтээгдэхүүнийг хамгийн хямд үнээр
+          Handmade in UB
         </motion.p>
 
         <motion.div
@@ -29,8 +33,10 @@ export default function Hero() {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5, delay: 0.4 }}
         >
-          <Link href="/products"
-            className="inline-block bg-white text-blue-600 font-bold px-8 py-4 rounded-2xl text-lg hover:bg-blue-50 transition shadow-lg">
+          <Link
+            href="/products"
+            className="inline-block bg-white text-blue-600 font-bold px-8 py-4 rounded-2xl text-lg hover:bg-blue-50 transition shadow-lg"
+          >
             Бүтээгдэхүүн үзэх →
           </Link>
         </motion.div>

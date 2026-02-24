@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Category } from '@/types'
+import { useRouter } from 'next/navigation'
 
 type FormState = {
   name: string
@@ -33,6 +34,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(false)
   const [msg, setMsg] = useState('')
   const supabase = createClient()
+  const router = useRouter()
 
   useEffect(() => {
     supabase
@@ -63,6 +65,12 @@ export default function AdminPage() {
     if (!error) setForm(initialForm)
   }
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    router.push('/admin/login')
+    router.refresh()
+  }
+
   const fields: { key: StringField; label: string; placeholder: string; type?: string }[] = [
     { key: 'name', label: 'Нэр', placeholder: 'Бүтээгдэхүүний нэр' },
     { key: 'price', label: 'Үнэ (₮)', placeholder: '150000', type: 'number' },
@@ -73,7 +81,15 @@ export default function AdminPage() {
 
   return (
     <div className="max-w-xl mx-auto px-4 py-12">
-      <h1 className="text-2xl font-bold mb-8">Admin — Бүтээгдэхүүн нэмэх</h1>
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-2xl font-bold">Admin — Бүтээгдэхүүн нэмэх</h1>
+        <button
+          onClick={handleLogout}
+          className="text-sm text-gray-500 hover:text-red-500 transition border border-gray-200 px-4 py-2 rounded-xl hover:border-red-200"
+        >
+          Гарах
+        </button>
+      </div>
       {msg && <p className="mb-4 p-3 bg-blue-50 rounded-xl text-sm">{msg}</p>}
 
       <form onSubmit={handleSubmit} className="space-y-4">
