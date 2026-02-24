@@ -68,7 +68,7 @@ ${itemLines}
 
 💰 *Нийт дүн:* ${totalPrice.toLocaleString()}₮
 
-🕐 *Цаг:* ${new Date().toLocaleString('mn-MN')}
+🕐 *Цаг:* ${new Date().toLocaleString('mn-MN', { timeZone: 'Asia/Ulaanbaatar' })}
   `.trim()
 
   const res = await fetch(
