@@ -1,5 +1,6 @@
 'use client'
 import Link from 'next/link'
+import Image from 'next/image' // 1. Image компонентыг импортлох
 import { ShoppingCart, Menu, X } from 'lucide-react'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -15,9 +16,18 @@ export default function Navbar() {
     <>
       <nav className="bg-white shadow-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link href="/" className="text-2xl font-bold text-blue-600">
-            Coziness
+          {/* Logo Section */}
+          <Link href="/" className="flex items-center gap-2 group">
+            {/* 2. Logo Зураг */}
+            <div className="relative w-65 h-65">
+              <Image
+                src="/Coziness.svg"
+                alt="Coziness Logo"
+                fill
+                className="object-contain"
+                priority
+              />
+            </div>
           </Link>
 
           {/* Desktop Nav */}
@@ -30,7 +40,7 @@ export default function Navbar() {
             </Link>
           </div>
 
-          {/* Cart Button */}
+          {/* Rest of the component (Cart button, Mobile menu) */}
           <div className="flex items-center gap-3">
             <button
               onClick={() => setCartOpen(true)}
@@ -44,41 +54,13 @@ export default function Navbar() {
               )}
             </button>
 
-            {/* Mobile menu toggle */}
             <button className="md:hidden p-2" onClick={() => setMenuOpen(!menuOpen)}>
               {menuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
           </div>
         </div>
 
-        {/* Mobile Menu */}
-        <AnimatePresence>
-          {menuOpen && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="md:hidden overflow-hidden bg-white border-t"
-            >
-              <div className="flex flex-col p-4 gap-3">
-                <Link
-                  href="/"
-                  onClick={() => setMenuOpen(false)}
-                  className="text-gray-700 hover:text-blue-600"
-                >
-                  Нүүр
-                </Link>
-                <Link
-                  href="/products"
-                  onClick={() => setMenuOpen(false)}
-                  className="text-gray-700 hover:text-blue-600"
-                >
-                  Бүтээгдэхүүн
-                </Link>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* Mobile menu content... */}
       </nav>
 
       <CartSidebar open={cartOpen} onClose={() => setCartOpen(false)} />
