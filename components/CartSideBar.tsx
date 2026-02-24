@@ -79,6 +79,8 @@ const AIMAGS = [
   'Хэнтий',
 ]
 
+const DELIVERY_FEE = 5000
+
 export default function CartSidebar({ open, onClose }: Props) {
   const { items, updateQuantity, removeItem, totalPrice, clearCart } = useCart()
   const [step, setStep] = useState<Step>('cart')
@@ -119,7 +121,8 @@ export default function CartSidebar({ open, onClose }: Props) {
             quantity: i.quantity,
             price: i.product.price,
           })),
-          totalPrice,
+          totalPrice: totalPrice + DELIVERY_FEE, // ← хүргэлт нэмсэн
+          deliveryFee: DELIVERY_FEE, // ← тусдаа илгээх
           contact,
         }),
       })
@@ -269,9 +272,15 @@ export default function CartSidebar({ open, onClose }: Props) {
                       </span>
                     </div>
                   ))}
-                  <div className="border-t mt-2 pt-2 flex justify-between font-bold">
-                    <span>Нийт</span>
-                    <span className="text-blue-600">{totalPrice.toLocaleString()}₮</span>
+                  <div className="border-t mt-2 pt-2 space-y-1">
+                    <div className="flex justify-between text-sm text-gray-500">
+                      <span>Хүргэлт</span>
+                      <span>5,000₮</span>
+                    </div>
+                    <div className="flex justify-between font-bold">
+                      <span>Нийт</span>
+                      <span className="text-blue-600">{(totalPrice + 5000).toLocaleString()}₮</span>
+                    </div>
                   </div>
                 </div>
 

@@ -29,10 +29,12 @@ export async function POST(req: NextRequest) {
   const {
     items,
     totalPrice,
+    deliveryFee,
     contact,
   }: {
     items: OrderItem[]
     totalPrice: number
+    deliveryFee: number
     contact: ContactForm
   } = body
 
@@ -65,7 +67,8 @@ ${address}
 
 📦 *Захиалсан бараа:*
 ${itemLines}
-
+💰 *Бараа:* ${(totalPrice - deliveryFee).toLocaleString()}₮
+🚚 *Хүргэлт:* ${deliveryFee.toLocaleString()}₮
 💰 *Нийт дүн:* ${totalPrice.toLocaleString()}₮
 
 🕐 *Цаг:* ${new Date().toLocaleString('mn-MN', { timeZone: 'Asia/Ulaanbaatar' })}
