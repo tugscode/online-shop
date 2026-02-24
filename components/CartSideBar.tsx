@@ -424,7 +424,7 @@ export default function CartSidebar({ open, onClose }: Props) {
                       <label className="block text-sm font-semibold text-gray-700 mb-1">Тоот</label>
                       <input
                         type="text"
-                        placeholder="Өрөөний дугаар"
+                        placeholder="Хаалганы дугаар"
                         value={contact.door}
                         onChange={(e) => update({ door: e.target.value })}
                         className={inputClass}
@@ -436,7 +436,7 @@ export default function CartSidebar({ open, onClose }: Props) {
                         Дэлгэрэнгүй хаяг
                       </label>
                       <textarea
-                        placeholder="Жишээ: 3-р давхар, баруун гар тал..."
+                        placeholder="Жишээ: Орцны код эсвэл ойрхон олны танил барилга гэх мэт..."
                         value={contact.detail}
                         onChange={(e) => update({ detail: e.target.value })}
                         rows={2}

@@ -17,9 +17,7 @@ export default async function HomePage() {
     <>
       <Hero />
       <section className="max-w-7xl mx-auto px-4 py-16">
-        <h2 className="text-3xl font-bold text-gray-800 mb-8">
-          Онцлох бүтээгдэхүүн
-        </h2>
+        <h2 className="text-3xl font-bold text-gray-800 mb-8">Онцлох бүтээгдэхүүн</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {featured?.map((product: Product) => (
             <ProductCard key={product.id} product={product} />
